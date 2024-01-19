@@ -45,9 +45,11 @@ ffibuilder.embedding_init_code(f"""
         output[:, :] = src.predict(model_key, x)
     
     @ffi.def_extern()
-    def get_params(model_key: int) -> str:
+    def get_params(model_key: int) -> ffi.CData:
         import src
-        return src.get_params(model_key)
+        output = src.get_params(model_key)
+        output = ffi.new("char[]", output.encode())
+        return output
     
     @ffi.def_extern()
     def set_params(model_key: int, params: str):

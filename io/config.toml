@@ -1,6 +1,8 @@
-n_iterations = 1
-n_plays_per_iteration = 1_000_000
-concurrency = 1
-output_dir = "io/models" # comment-out to skip saving
 dataset_path = "io/dataset.bin"
+n_iterations = 1
+
+[iteration]
+n_plays = 1
+concurrency = 1
+#output_dir = "io/models" # comment-out to skip saving
 fee_per_contract_usd = 1.65 # NQ

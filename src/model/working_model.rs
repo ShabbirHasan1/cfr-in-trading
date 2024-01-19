@@ -51,8 +51,9 @@ impl<T: Point> Model<T> for WorkingModel {
     }
 
     fn loss(&self) -> f64 {
-        let v: Value = serde_json::from_str(&pyemb::get_params(self.model_id)).unwrap();
-        v.as_object().unwrap()["loss"].as_f64().unwrap()
+        let params = pyemb::get_params(self.model_id);
+        let v: Value = serde_json::from_str(&params).unwrap();
+        v.as_object().unwrap()["loss"].as_f64().unwrap_or(f64::NAN)
     }
 }
 

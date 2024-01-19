@@ -49,10 +49,12 @@ def predict(model_key, x):
 def get_params(model_key: int) -> str:
     global _models
     model = _models[model_key]
+    coef_ = getattr(model, "coef_", np.array([])).tolist()
+    intercept_ = getattr(model, "intercept_", None)
     params = {
-        "coef": model.coef_.tolist(),
-        "intercept": model.intercept_,
-        "loss": model.loss,
+        "coef": coef_,
+        "intercept": intercept_,
+        "loss": None,
     }
     return json.dumps(params)
 

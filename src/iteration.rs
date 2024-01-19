@@ -44,10 +44,6 @@ impl<T: Point> Iteration<T> {
         };
         println!("training...");
         self.train_models(samples);
-        for model_type in ModelType::all() {
-            let model: &Box<dyn Model<T>> = self.output_model_set.model(model_type);
-            println!("{}: loss={}", model_type, model.loss());
-        }
         self.save_models();
         println!("done");
     }
@@ -57,10 +53,16 @@ impl<T: Point> Iteration<T> {
     }
 
     fn train_models(&self, samples: Vec<Vec<Sample<T>>>) {
+        if samples.is_empty() {
+            return;
+        }
         for model_type in ModelType::all() {
             let model: &Box<dyn Model<T>> = self.output_model_set.model(model_type);
             let model_index: usize = model_type.into();
             let modelwise_samples = &samples[model_index];
+            if modelwise_samples.is_empty() {
+                continue;
+            }
             model.train(modelwise_samples);
         }
     }
@@ -69,6 +71,8 @@ impl<T: Point> Iteration<T> {
         if self.config.output_dir.is_none() {
             return;
         }
+        std::fs::create_dir_all(self.config.output_dir.as_ref().unwrap())
+            .expect("failed to create directory");
         for model_type in ModelType::all() {
             let path: String = format!(
                 "{}/{}_{}.json",
@@ -105,19 +109,25 @@ fn run_plays_in_single_thread<T: Point>(
             }
             match play.advance_to_inference() {
                 Some(request) => {
+                    // println!("request: {:?}", request);
                     all_finished = false;
                     inferrer.put_request(play_index, request.model_type, request.bar_index);
                 }
-                None => {}
+                None => {
+                    // println!("none!");
+                }
             }
         }
         if all_finished {
             break;
         }
+        // println!("points: {:?}", inferrer.points);
+        // println!("indices: {:?}", inferrer.play_indices);
         inferrer
             .fulfill_all_requests()
             .iter()
             .for_each(|inference| {
+                // println!("inference: {:?}", inference);
                 let play: &mut Play<T> = &mut plays[inference.play_index];
                 play.advance_with_inference(inference.prediction);
             });
@@ -130,6 +140,21 @@ fn run_plays_in_single_thread<T: Point>(
         let model_type: ModelType = play.trained_model_type();
         let utility: Utility = play.utility();
         let point: T = dataset[play.start_bar_index()].point.clone();
+        let point_has_nan: bool = point.as_ref().iter().any(|x| !x.is_finite());
+        if point_has_nan {
+            println!("nan!: {:?}", point);
+            continue;
+        }
+        if point.as_ref().iter().any(|x| {
+            if !x.is_finite() {
+                println!("non-finite!: {}", x);
+                true
+            } else {
+                false
+            }
+        }) {
+            continue;
+        }
         let sample: Sample<T> = Sample {
             point: point,
             utility: utility,
@@ -137,5 +162,6 @@ fn run_plays_in_single_thread<T: Point>(
         let model_index: usize = model_type.into();
         samples[model_index].push(sample);
     }
+    println!("samples: {:?}", samples);
     samples
 }

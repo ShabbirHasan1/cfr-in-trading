@@ -4,4 +4,6 @@ from .main import (
     delete_model,
     fit,
     predict,
+    get_params,
+    set_params,
 )

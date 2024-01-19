@@ -2,6 +2,7 @@ use crate::dtypes::Utility;
 use crate::model::{Model, ModelType};
 use crate::{DatesetRef, ModelSetRef, Point};
 
+#[derive(Debug)]
 pub struct Inference {
     pub play_index: usize,
     pub prediction: Utility,
@@ -11,8 +12,8 @@ pub struct Inferrer<T: Point> {
     dataset: DatesetRef<T>,
     models: ModelSetRef<T>,
     n_plays: usize,
-    points: Vec<Vec<T>>,           // [n_models][n_samples]
-    play_indices: Vec<Vec<usize>>, // [[n_models][n_samples]
+    pub points: Vec<Vec<T>>,           // [n_models][n_samples]
+    pub play_indices: Vec<Vec<usize>>, // [[n_models][n_samples]
 }
 
 impl<T: Point> Inferrer<T> {
