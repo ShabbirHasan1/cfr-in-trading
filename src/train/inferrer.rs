@@ -42,6 +42,12 @@ impl<T: Point> Inferrer<T> {
         }
     }
 
+    pub fn infer(&self, model_type: ModelType, bar_index: usize) -> Utility {
+        let model: &Box<dyn Model<T>> = &self.models.model(model_type);
+        let point: T = self.dataset[bar_index].point.clone();
+        model.infer(&[point])[0]
+    }
+
     pub fn put_request(&mut self, play_index: usize, model_type: ModelType, bar_index: usize) {
         let model_index: usize = model_type.into();
         let point: T = self.dataset[bar_index].point.clone();

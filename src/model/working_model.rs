@@ -1,20 +1,44 @@
 use ndarray::Array2;
 use serde_json::Value;
+use std::pin::Pin;
 
 use crate::dtypes::Utility;
 use crate::dtypes::{Point, Sample};
 use crate::model::Model;
 use crate::pyemb;
 
+struct Params {
+    coef: Vec<f64>,
+    intercept: f64,
+    _pin: std::marker::PhantomPinned,
+}
+
+impl Params {
+    fn new() -> Pin<Box<Self>> {
+        let object = Self {
+            coef: vec![],
+            intercept: 0.0,
+            _pin: std::marker::PhantomPinned,
+        };
+        Box::pin(object)
+    }
+}
+
 pub struct WorkingModel {
     model_id: u64,
+    params: Pin<Box<Params>>,
 }
 
 impl WorkingModel {
     pub fn new() -> Self {
         Self {
             model_id: pyemb::new_model(),
+            params: Params::new(),
         }
+    }
+
+    fn params_mut(&self) -> &mut Params {
+        unsafe { &mut *(std::ptr::addr_of!(*self.params) as *mut Params) }
     }
 }
 
@@ -27,8 +51,22 @@ impl Drop for WorkingModel {
 impl<T: Point> Model<T> for WorkingModel {
     fn infer(&self, points: &[T]) -> Vec<Utility> {
         let x: Array2<f64> = points_to_arr2(points);
-        let p: Array2<f64> = pyemb::predict(self.model_id, &x);
-        p.column(0).iter().map(|&x| Utility(x)).collect()
+        // let p: Array2<f64> = pyemb::predict(self.model_id, &x);
+        // p.column(0).iter().map(|&x| Utility(x)).collect()
+        let p2 = x
+            .rows()
+            .into_iter()
+            .map(|v| {
+                let u = v
+                    .iter()
+                    .zip(&self.params.coef)
+                    .map(|(x, c)| x * c)
+                    .sum::<f64>()
+                    + self.params.intercept;
+                Utility(u)
+            })
+            .collect();
+        p2
     }
 
     fn train(&self, samples: &[Sample<T>]) {
@@ -45,8 +83,19 @@ impl<T: Point> Model<T> for WorkingModel {
     }
 
     fn load(&self, path: &str) -> anyhow::Result<()> {
+        if !std::path::Path::new(&path).exists() {
+            panic!("model file not found: {}", path);
+        }
         let params = std::fs::read_to_string(path)?;
         pyemb::set_params(self.model_id, &params);
+        let params: Value = serde_json::from_str(&params)?;
+        self.params_mut().coef = params["coef"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|x| x.as_f64().unwrap())
+            .collect();
+        self.params_mut().intercept = params["intercept"].as_f64().unwrap();
         Ok(())
     }
 
@@ -54,6 +103,10 @@ impl<T: Point> Model<T> for WorkingModel {
         let params = pyemb::get_params(self.model_id);
         let v: Value = serde_json::from_str(&params).unwrap();
         v.as_object().unwrap()["loss"].as_f64().unwrap_or(f64::NAN)
+    }
+
+    fn params(&self) -> String {
+        pyemb::get_params(self.model_id)
     }
 }
 

@@ -12,6 +12,8 @@ pub struct Point {
 }
 
 impl dtypes::Point for Point {}
+unsafe impl Sync for Point {}
+unsafe impl Send for Point {}
 
 #[repr(C)]
 struct Row {

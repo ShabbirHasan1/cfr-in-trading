@@ -5,3 +5,4 @@
 /io/dataset.bin
 __pycache__/
 *.py[cod]
+/main

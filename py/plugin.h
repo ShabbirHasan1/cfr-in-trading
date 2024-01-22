@@ -14,6 +14,6 @@ void fit(uint64_t model_key, struct Array2Ptr x, struct Array2Ptr y);
 
 void predict(struct Array2Ptr output, uint64_t model_key, struct Array2Ptr x);
 
-const char* get_params(uint64_t model_key);
+void get_params(uint64_t model_key, char* output);
 
 void set_params(uint64_t model_key, const char* params);

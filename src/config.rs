@@ -19,6 +19,7 @@ pub struct CliArgs {
 pub struct Config {
     pub print_config: bool,
     pub dataset_path: String,
+    pub start_iteration: u64,
     pub n_iterations: u64,
     pub iteration: IterationConfig,
 }
@@ -33,6 +34,7 @@ impl Config {
         let config = Config {
             print_config: cli.print_config,
             dataset_path: toml.dataset_path,
+            start_iteration: toml.start_iteration,
             n_iterations: toml.n_iterations,
             iteration: toml.iteration,
         };
@@ -43,6 +45,7 @@ impl Config {
 #[derive(Debug, Clone, Deserialize)]
 pub struct Toml {
     pub dataset_path: String,
+    pub start_iteration: u64,
     pub n_iterations: u64,
     pub iteration: IterationConfig,
 }
@@ -51,6 +54,9 @@ pub struct Toml {
 pub struct IterationConfig {
     pub n_plays: u64,
     pub concurrency: u64,
-    pub output_dir: Option<String>,
+    pub output_dir: String,
     pub fee_per_contract_usd: f64,
+    pub multiplier: f64,
+    pub utility_penalty_bps: f64,
+    pub max_play_duration_in_bars: u64,
 }

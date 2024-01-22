@@ -1,3 +1,4 @@
+use crate::config::IterationConfig;
 use rand::prelude::ThreadRng;
 use rand::Rng;
 
@@ -8,6 +9,9 @@ use crate::model::{ModelAction, ModelSide, ModelType};
 /// Single play (opening and closing trades)
 pub struct Play<T: Point> {
     fee: f64,
+    multiplier: f64,
+    utility_penalty_bps: f64,
+    max_play_duration_in_bars: usize,
     dataset: DatesetRef<T>,
     trained_model_type: ModelType,
     closing_model_type: ModelType,
@@ -17,16 +21,34 @@ pub struct Play<T: Point> {
 }
 
 impl<T: Point> Play<T> {
-    pub fn new(fee: f64, dataset: DatesetRef<T>, trained_model_type: ModelType) -> Self {
+    pub fn new(
+        config: &IterationConfig,
+        dataset: DatesetRef<T>,
+        trained_model_type: ModelType,
+    ) -> Self {
         let mut rng: ThreadRng = rand::thread_rng();
-        let start_index: usize = rng.gen_range(0..dataset.len() - 10);
+        let mut start_index: usize = rng.gen_range(0..dataset.len() - 10);
+        loop {
+            if start_index >= dataset.len() {
+                break;
+            }
+            let start_bar: &Bar<T> = &dataset[start_index];
+            if start_bar.point.is_finite() {
+                break;
+            } else {
+                start_index += 1;
+            }
+        }
         let current_index: usize = start_index + 1;
         let closing_model_type: ModelType = ModelType {
             side: trained_model_type.side,
             action: ModelAction::Closing,
         };
         Self {
-            fee,
+            fee: config.fee_per_contract_usd,
+            multiplier: config.multiplier,
+            utility_penalty_bps: config.utility_penalty_bps,
+            max_play_duration_in_bars: config.max_play_duration_in_bars as usize,
             dataset,
             trained_model_type,
             closing_model_type,
@@ -34,6 +56,11 @@ impl<T: Point> Play<T> {
             current_index,
             finished: false,
         }
+    }
+
+    #[inline]
+    pub fn len(&self) -> usize {
+        self.current_index - self.start_index
     }
 
     #[inline]
@@ -53,7 +80,11 @@ impl<T: Point> Play<T> {
 
     pub fn utility(&self) -> Utility {
         let start_bar: &Bar<T> = &self.dataset[self.start_index];
-        let current_bar: &Bar<T> = &self.dataset[self.current_index];
+        let current_bar: &Bar<T> = if self.current_index < self.dataset.len() {
+            &self.dataset[self.current_index]
+        } else {
+            &self.dataset[self.dataset.len() - 1]
+        };
         let price_return: f64 = current_bar.mid_price.0 - start_bar.mid_price.0;
         let sign: f64 = match self.trained_model_type.side {
             ModelSide::Long => 1.0,
@@ -63,7 +94,9 @@ impl<T: Point> Play<T> {
             ModelAction::Opening => self.fee * 2.0,
             ModelAction::Closing => 0.0,
         };
-        let utility: f64 = price_return * sign - fee;
+        let utility: f64 = ((price_return * sign) * self.multiplier - fee) * 10_000.0
+            / (start_bar.mid_price.0 * self.multiplier)
+            - self.utility_penalty_bps;
         Utility(utility)
     }
 
@@ -71,9 +104,21 @@ impl<T: Point> Play<T> {
         if self.finished {
             return None;
         }
-        if self.current_index >= self.dataset.len() {
+        if self.len() > self.max_play_duration_in_bars {
             self.finished = true;
             return None;
+        }
+        loop {
+            if self.current_index >= self.dataset.len() {
+                self.finished = true;
+                return None;
+            }
+            let current_bar: &Bar<T> = &self.dataset[self.current_index];
+            if current_bar.point.is_finite() {
+                break;
+            } else {
+                self.current_index += 1;
+            }
         }
         Some(InferenceRequest {
             bar_index: self.current_index,
@@ -82,11 +127,16 @@ impl<T: Point> Play<T> {
     }
 
     pub fn advance_with_inference(&mut self, utility: Utility) {
+        if utility.0.is_nan() {
+            self.finished = true;
+            println!("nan inference");
+            return;
+        }
         let utility_of_doing_nothing: f64 = utility.0;
         if utility_of_doing_nothing > 0.0 {
-            self.finished = true;
-        } else {
             self.current_index += 1;
+        } else {
+            self.finished = true;
         }
     }
 }

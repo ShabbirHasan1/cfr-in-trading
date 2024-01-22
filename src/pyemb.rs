@@ -1,5 +1,7 @@
+#![allow(dead_code)]
 use ndarray::Array2;
-use std::ffi::c_char;
+use std::ffi;
+use std::ffi::CString;
 
 #[repr(C)]
 struct Array2Ptr {
@@ -32,7 +34,7 @@ mod _pyemb {
         pub(super) fn delete_model(model_id: u64);
         pub(super) fn fit(model_id: u64, x: Array2Ptr, y: Array2Ptr);
         pub(super) fn predict(output: Array2Ptr, model_id: u64, x: Array2Ptr);
-        pub(super) fn get_params(model_id: u64) -> *const c_char;
+        pub(super) fn get_params(model_id: u64, output: *const c_char);
         pub(super) fn set_params(model_id: u64, params: *const c_char);
     }
 }
@@ -53,7 +55,8 @@ pub fn fit(model_id: u64, x: &Array2<f64>, y: &Array2<f64>) {
 
 pub fn predict(model_id: u64, x: &Array2<f64>) -> Array2<f64> {
     let x_ptr = Array2Ptr::new(x);
-    let mut output = Array2::zeros(x.dim());
+    let n_samples = x.shape()[0];
+    let mut output = Array2::zeros((n_samples, 1));
     output.fill(f64::NAN);
     let output_ptr = Array2Ptr::new(&output);
     unsafe { _pyemb::predict(output_ptr, model_id, x_ptr) }
@@ -61,10 +64,18 @@ pub fn predict(model_id: u64, x: &Array2<f64>) -> Array2<f64> {
 }
 
 pub fn get_params(model_id: u64) -> String {
-    let c_str: *const c_char = unsafe { _pyemb::get_params(model_id) };
-    let c_str = unsafe { std::ffi::CStr::from_ptr(c_str) };
-    let str_slice = c_str.to_str().unwrap();
-    str_slice.to_string()
+    let mut output: Vec<u8> = Vec::with_capacity(1024);
+    for _ in 0..1024 {
+        output.push(0);
+    }
+    let output = unsafe { CString::from_vec_unchecked(output) };
+    let c_str = output.as_ptr();
+    unsafe { _pyemb::get_params(model_id, c_str) };
+    let output = unsafe { ffi::CStr::from_ptr(output.as_ptr() as *const _) }
+        .to_str()
+        .unwrap()
+        .to_string();
+    output
 }
 
 pub fn set_params(model_id: u64, params: &str) {

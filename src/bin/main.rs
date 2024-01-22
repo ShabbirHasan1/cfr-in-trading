@@ -9,10 +9,12 @@ fn main() {
         println!("{:#?}", config);
         return;
     }
-    println!("Reading dataset...");
+    // println!("Reading dataset...");
     let dateset_ref: DatesetRef<Point> = load_dataset(&config.dataset_path);
-    println!("Dataset size: {}", dateset_ref.len());
-    for iteration_index in 0..(config.n_iterations as usize) {
+    // println!("Dataset size: {}", dateset_ref.len());
+    let start = config.start_iteration as usize;
+    let stop = start + config.n_iterations as usize;
+    for iteration_index in start..stop {
         println!("Iteration: {}", iteration_index);
         let iteration: Iteration<Point> = Iteration::new(
             iteration_index,

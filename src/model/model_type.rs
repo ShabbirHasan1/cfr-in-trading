@@ -45,6 +45,11 @@ impl ModelType {
             .map(|i| Self::try_from(i).unwrap())
             .collect()
     }
+
+    pub fn random() -> Self {
+        let i: usize = rand::random();
+        Self::try_from(i % Self::N_VARIANTS).unwrap()
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

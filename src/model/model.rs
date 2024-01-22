@@ -1,6 +1,9 @@
 use crate::dtypes::{Point, Sample, Utility};
 
-pub trait Model<T: Point> {
+pub trait Model<T: Point>
+where
+    Self: Send + Sync,
+{
     /// Returns the utility of non-trivial action.
     /// At zero position, non-trivial action is opening
     /// At non-zero position, non-trivial action is closing
@@ -15,10 +18,14 @@ pub trait Model<T: Point> {
     }
 
     fn load(&self, _path: &str) -> anyhow::Result<()> {
-        unimplemented!()
+        Ok(())
     }
 
     fn loss(&self) -> f64 {
+        unimplemented!()
+    }
+
+    fn params(&self) -> String {
         unimplemented!()
     }
 }

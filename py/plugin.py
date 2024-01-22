@@ -42,18 +42,19 @@ ffibuilder.embedding_init_code(f"""
         import src
         x = src.ndarray_from_array2(x)
         output = src.ndarray_from_array2(output)
-        output[:, :] = src.predict(model_key, x)
+        prediction = src.predict(model_key, x)
+        output[:, :] = prediction.reshape(-1, 1)
     
     @ffi.def_extern()
-    def get_params(model_key: int) -> ffi.CData:
+    def get_params(model_key: int, output: ffi.CData):
         import src
-        output = src.get_params(model_key)
-        output = ffi.new("char[]", output.encode())
-        return output
+        output2 = src.get_params(model_key).encode()
+        output[0:len(output2)] = output2
     
     @ffi.def_extern()
     def set_params(model_key: int, params: str):
         import src
+        params = ffi.string(params).decode()
         return src.set_params(model_key, params)
 """)
 

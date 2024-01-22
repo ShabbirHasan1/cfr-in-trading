@@ -1,7 +1,7 @@
 /// Array of f64 features at a point of time
 pub trait Point
 where
-    Self: Sized + Clone + std::fmt::Debug,
+    Self: Sized + Clone + Send + Sync + std::fmt::Debug + 'static,
 {
     fn as_ref(&self) -> &[f64] {
         unsafe {
@@ -18,5 +18,9 @@ where
 
     fn default() -> Self {
         unsafe { std::mem::zeroed() }
+    }
+
+    fn is_finite(&self) -> bool {
+        self.as_ref().iter().all(|x| x.is_finite())
     }
 }
