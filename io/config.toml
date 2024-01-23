@@ -1,6 +1,6 @@
 dataset_path = "io/dataset.bin"
 start_iteration = 1
-n_iterations = 100
+n_iterations = 15
 
 [iteration]
 n_plays = 4_000_000
@@ -10,3 +10,12 @@ fee_per_contract_usd = 1.65 # NQ
 multiplier = 20.0 # NQ
 utility_penalty_bps = 0.05 # profit decrease due to execution not by mid-price
 max_play_duration_in_bars  = 900
+offset = 0.25
+limit = 0.75
+
+[backtest]
+iteration = 14
+models_dir = "io/bt_models"
+profits_output_file = "io/profits.csv"
+offset = 0.75
+limit = 0.25

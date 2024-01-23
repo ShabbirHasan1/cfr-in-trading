@@ -1,4 +1,4 @@
-use cfr_proto::{datasets, Config, DatesetRef, Iteration};
+use cfr_proto::{datasets, Config, DatasetRef, Iteration};
 
 type Point = datasets::nq_f1_f2_f4::Point;
 use datasets::nq_f1_f2_f4::load as load_dataset;
@@ -10,8 +10,10 @@ fn main() {
         return;
     }
     // println!("Reading dataset...");
-    let dateset_ref: DatesetRef<Point> = load_dataset(&config.dataset_path);
-    // println!("Dataset size: {}", dateset_ref.len());
+    let offset: f64 = config.iteration.offset;
+    let limit: f64 = config.iteration.limit;
+    let dateset_ref: DatasetRef<Point> = load_dataset(&config.dataset_path, offset, limit);
+    println!("Dataset size: {}", dateset_ref.len());
     let start = config.start_iteration as usize;
     let stop = start + config.n_iterations as usize;
     for iteration_index in start..stop {

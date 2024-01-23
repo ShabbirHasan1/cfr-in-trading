@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::dtypes::Point;
-use crate::model::{Model, ModelType, RandomModel, WorkingModel};
+use crate::model::{Model, ModelAction, ModelType, RandomModel, WorkingModel};
 
 pub struct ModelSet<T: Point> {
     iteration_index: usize,
@@ -44,6 +44,21 @@ impl<T: Point> ModelSet<T> {
             let model_path = format!(
                 "{}/{}_{}.json",
                 self.output_dir, self.iteration_index, model_type
+            );
+            let model_index: usize = model_type.into();
+            self.models[model_index].load(&model_path).unwrap();
+        });
+    }
+
+    pub fn load_model_params_with_close_from_previous_iteration(&self) {
+        ModelType::all().into_iter().for_each(|model_type| {
+            let iteration_index = match model_type.action {
+                ModelAction::Opening => self.iteration_index,
+                ModelAction::Closing => self.iteration_index - 1,
+            };
+            let model_path = format!(
+                "{}/{}_{}.json",
+                self.output_dir, iteration_index, model_type
             );
             let model_index: usize = model_type.into();
             self.models[model_index].load(&model_path).unwrap();

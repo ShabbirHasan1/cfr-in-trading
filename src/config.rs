@@ -22,6 +22,7 @@ pub struct Config {
     pub start_iteration: u64,
     pub n_iterations: u64,
     pub iteration: IterationConfig,
+    pub backtest: BacktestConfig,
 }
 
 impl Config {
@@ -37,6 +38,7 @@ impl Config {
             start_iteration: toml.start_iteration,
             n_iterations: toml.n_iterations,
             iteration: toml.iteration,
+            backtest: toml.backtest,
         };
         Ok(config)
     }
@@ -48,6 +50,7 @@ pub struct Toml {
     pub start_iteration: u64,
     pub n_iterations: u64,
     pub iteration: IterationConfig,
+    pub backtest: BacktestConfig,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -59,4 +62,15 @@ pub struct IterationConfig {
     pub multiplier: f64,
     pub utility_penalty_bps: f64,
     pub max_play_duration_in_bars: u64,
+    pub offset: f64,
+    pub limit: f64,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct BacktestConfig {
+    pub iteration: usize,
+    pub models_dir: String,
+    pub profits_output_file: String,
+    pub offset: f64,
+    pub limit: f64,
 }

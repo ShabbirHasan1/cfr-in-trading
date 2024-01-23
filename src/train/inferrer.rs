@@ -1,6 +1,6 @@
 use crate::dtypes::Utility;
 use crate::model::{Model, ModelType};
-use crate::{DatesetRef, ModelSetRef, Point};
+use crate::{DatasetRef, ModelSetRef, Point};
 
 #[derive(Debug)]
 pub struct Inference {
@@ -9,7 +9,7 @@ pub struct Inference {
 }
 
 pub struct Inferrer<T: Point> {
-    dataset: DatesetRef<T>,
+    dataset: DatasetRef<T>,
     models: ModelSetRef<T>,
     n_plays: usize,
     pub points: Vec<Vec<T>>,           // [n_models][n_samples]
@@ -17,7 +17,7 @@ pub struct Inferrer<T: Point> {
 }
 
 impl<T: Point> Inferrer<T> {
-    pub fn new(dataset: DatesetRef<T>, models: ModelSetRef<T>, n_plays: usize) -> Self {
+    pub fn new(dataset: DatasetRef<T>, models: ModelSetRef<T>, n_plays: usize) -> Self {
         let points: Vec<Vec<T>> = (0..models.len())
             .map(|_| Vec::with_capacity(n_plays))
             .collect();

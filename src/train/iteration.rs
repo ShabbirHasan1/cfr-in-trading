@@ -3,7 +3,7 @@ use rand::Rng;
 use std::sync::{Arc, RwLock, RwLockWriteGuard};
 
 use crate::config::IterationConfig;
-use crate::dtypes::{DatesetRef, Point, Sample, Utility};
+use crate::dtypes::{DatasetRef, Point, Sample, Utility};
 use crate::model::{Model, ModelSet, ModelSetRef, ModelType};
 use crate::train::inferrer::Inferrer;
 use crate::train::iteration_stat::IterationStat;
@@ -12,7 +12,7 @@ use crate::train::play::Play;
 /// Runs plays to collect training data and trains models.
 pub struct Iteration<T: Point> {
     iteration_index: usize,
-    dataset: DatesetRef<T>,
+    dataset: DatasetRef<T>,
     config: IterationConfig,
     input_model_set: ModelSetRef<T>,
     output_model_set: ModelSetRef<T>,
@@ -20,7 +20,7 @@ pub struct Iteration<T: Point> {
 }
 
 impl<T: Point> Iteration<T> {
-    pub fn new(iteration_index: usize, dataset: DatesetRef<T>, config: IterationConfig) -> Self {
+    pub fn new(iteration_index: usize, dataset: DatasetRef<T>, config: IterationConfig) -> Self {
         let input_model_set: ModelSetRef<T> =
             ModelSet::new(iteration_index - 1, &config.output_dir);
         input_model_set.load_model_params();
@@ -111,7 +111,7 @@ impl<T: Point> Iteration<T> {
 fn run_plays<T: Point>(
     config: IterationConfig,
     samples: Arc<RwLock<Vec<Vec<Sample<T>>>>>,
-    dataset: DatesetRef<T>,
+    dataset: DatasetRef<T>,
     models: ModelSetRef<T>,
     n_plays: usize,
     stat: Arc<IterationStat>,
@@ -171,7 +171,7 @@ fn run_plays<T: Point>(
 fn run_plays_sequentially<T: Point>(
     config: IterationConfig,
     samples: Arc<RwLock<Vec<Vec<Sample<T>>>>>,
-    dataset: DatesetRef<T>,
+    dataset: DatasetRef<T>,
     models: ModelSetRef<T>,
     n_plays: usize,
     stat: Arc<IterationStat>,

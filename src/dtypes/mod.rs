@@ -12,4 +12,4 @@ pub use utility::Utility;
 
 use std::sync::Arc;
 
-pub type DatesetRef<T> = Arc<Vec<Bar<T>>>;
+pub type DatasetRef<T> = Arc<Vec<Bar<T>>>;

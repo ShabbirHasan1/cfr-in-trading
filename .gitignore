@@ -3,6 +3,9 @@
 /pydev
 /io/models
 /io/dataset.bin
+/io/profits.csv
+/io/bt_models*
 __pycache__/
 *.py[cod]
-/main
+/train
+/backtest

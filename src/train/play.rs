@@ -3,7 +3,7 @@ use rand::prelude::ThreadRng;
 use rand::Rng;
 
 use crate::dtypes::{Bar, Utility};
-use crate::dtypes::{DatesetRef, Point};
+use crate::dtypes::{DatasetRef, Point};
 use crate::model::{ModelAction, ModelSide, ModelType};
 
 /// Single play (opening and closing trades)
@@ -12,7 +12,7 @@ pub struct Play<T: Point> {
     multiplier: f64,
     utility_penalty_bps: f64,
     max_play_duration_in_bars: usize,
-    dataset: DatesetRef<T>,
+    dataset: DatasetRef<T>,
     trained_model_type: ModelType,
     closing_model_type: ModelType,
     start_index: usize,
@@ -23,7 +23,7 @@ pub struct Play<T: Point> {
 impl<T: Point> Play<T> {
     pub fn new(
         config: &IterationConfig,
-        dataset: DatesetRef<T>,
+        dataset: DatasetRef<T>,
         trained_model_type: ModelType,
     ) -> Self {
         let mut rng: ThreadRng = rand::thread_rng();

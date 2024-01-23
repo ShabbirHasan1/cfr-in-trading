@@ -21,9 +21,10 @@ struct Row {
     f1: f64,
     f2: f64,
     f4: f64,
+    ts: i64,
 }
 
-pub fn load(path: &str) -> dtypes::DatesetRef<Point> {
+pub fn load(path: &str, offset: f64, limit: f64) -> dtypes::DatasetRef<Point> {
     let path = utils::canonicalize_path(path).expect("failed to canonicalize path");
     let file = std::fs::File::open(path).expect("failed to open file");
     let file_size = file.metadata().expect("failed to get metadata").len();
@@ -37,6 +38,7 @@ pub fn load(path: &str) -> dtypes::DatesetRef<Point> {
     let mut reader = std::io::BufReader::new(file);
     while let Ok(_) = reader.read_exact(row_slice) {
         let bar = Bar {
+            timestamp: row.ts,
             mid_price: Price(row.mp),
             point: Point {
                 f1: row.f1,
@@ -46,5 +48,8 @@ pub fn load(path: &str) -> dtypes::DatesetRef<Point> {
         };
         dataset.push(bar);
     }
+    let offset = (offset * n_rows as f64) as usize;
+    let limit = (limit * n_rows as f64) as usize;
+    let dataset = dataset[offset..offset + limit].to_vec();
     Arc::new(dataset)
 }

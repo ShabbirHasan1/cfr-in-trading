@@ -128,7 +128,7 @@ Options:
 Dataset: 3-feature points (features 1, 2 and 4 as referred to in index stratagies):
 NQ mid-price vs inferred NQ mid-price by referent equities.
 
-Interval: 2023
+Interval: 2023 (3/4 training set, 1/4 test set)
 
 Model: linear regression
 
@@ -137,7 +137,7 @@ Config:
 ```toml
 dataset_path = "io/dataset.bin"
 start_iteration = 1
-n_iterations = 100
+n_iterations = 15
 
 [iteration]
 n_plays = 4_000_000
@@ -147,38 +147,53 @@ fee_per_contract_usd = 1.65 # NQ
 multiplier = 20.0 # NQ
 utility_penalty_bps = 0.05 # profit decrease due to execution not by mid-price
 max_play_duration_in_bars  = 900
+offset = 0.25
+limit = 0.75
+
+[backtest]
+iteration = 14
+models_dir = "io/bt_models"
+profits_output_file = "io/profits.csv"
+offset = 0.75
+limit = 0.25
 ```
 
 Results:
 
 ```
-+-----------+------------------+-------------------------+
+`+-----------+------------------+-------------------------+
 | Iteration | Mean Play Length | Mean Utility Prediction |
 +-----------+------------------+-------------------------+
-|     1     |       2.21       |         -0.0003         |
-|     2     |       8.18       |          0.0215         |
-|     3     |      52.96       |          0.6811         |
-|     4     |      37.27       |          0.8369         |
-|     5     |      60.28       |          0.3708         |
-|     6     |      71.83       |          0.884          |
-|     7     |      80.48       |          0.7733         |
-|     8     |      103.05      |          0.7782         |
-|     9     |      170.67      |          0.7063         |
-|     10    |      109.74      |          0.846          |
-|     11    |      356.92      |          1.0552         |
-|     12    |      459.05      |          4.7853         |
-|     13    |      458.33      |          6.9034         |
-|     14    |      458.86      |          6.9154         |
-|     15    |      466.45      |          6.7672         |
-|     16    |      462.4       |          6.9526         |
-|     17    |      464.71      |          6.7602         |
-|     18    |      457.02      |          6.9897         |
-|     19    |      457.25      |          7.0637         |
-|     20    |      459.13      |          6.9206         |
-+-----------+------------------+-------------------------+
+|     1     |       2.21       |          0.0003         |
+|     2     |       5.82       |          0.0129         |
+|     3     |      48.07       |          0.1671         |
+|     4     |      138.77      |          1.0223         |
+|     5     |      64.97       |          1.2785         |
+|     6     |       95.8       |          0.3556         |
+|     7     |      187.7       |          2.5258         |
+|     8     |      325.18      |          1.5751         |
+|     9     |      435.02      |          4.5992         |
+|     10    |      457.1       |          6.9023         |
+|     11    |      450.05      |          6.5183         |
+|     12    |      454.97      |          6.7978         |
+|     13    |      451.56      |          6.553          |
+|     14    |      455.93      |          6.9046         |
+|     15    |      453.4       |          6.4919         |
++-----------+------------------+-------------------------+``
 ```
 
 Predicted utility is averaged here over all decision points of the play.
 
 In a play only the last prediction of utility is negative (termination condition). 
 This is why the mean prediction increases with the play length.
+
+
+Backtest:
+
+Test set
+
+![backtest](io/static/pnl_test_set.png)
+
+Full set
+
+![backtest](io/static/pnl_full_set.png)
