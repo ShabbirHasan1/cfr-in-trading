@@ -1,12 +1,12 @@
 dataset_path = "io/dataset.bin"
 start_iteration = 1
-n_iterations = 10
+n_iterations = 100
 
 [iteration]
-n_plays = 1_000_000
-concurrency = 50
-output_dir = "io/models" # comment-out to skip saving
+n_plays = 4_000_000
+concurrency = 10
+output_dir = "io/models"
 fee_per_contract_usd = 1.65 # NQ
 multiplier = 20.0 # NQ
-utility_penalty_bps = 0.01
+utility_penalty_bps = 0.05 # profit decrease due to execution not by mid-price
 max_play_duration_in_bars  = 900

@@ -21,6 +21,23 @@ Non-trivial action of closing models is doing nothing.
 
 Utility of the trivial action is 0.
 
+Utility formula:
+
+```rust
+let price_return: f64 = current_bar.mid_price.0 - start_bar.mid_price.0;
+let sign: f64 = match self.trained_model_type.side {
+   ModelSide::Long => 1.0,
+   ModelSide::Short => -1.0,
+};
+let fee: f64 = match self.trained_model_type.action {
+   ModelAction::Opening => self.fee * 2.0,
+   ModelAction::Closing => 0.0,
+};
+let utility: f64 = ((price_return * sign) * self.multiplier - fee) * 10_000.0 
+    / (start_bar.mid_price.0 * self.multiplier)
+   - self.utility_penalty_bps;
+```
+
 For the openining models, `utility = price_return - 2 * fee`
 
 For the closing models, `utility = price_return`
@@ -104,3 +121,64 @@ Options:
   -c, --config <CONFIG_PATH>  Config path [default: io/config.toml]
   -h, --help                  Print help
 ```
+
+
+## Example 
+
+Dataset: 3-feature points (features 1, 2 and 4 as referred to in index stratagies):
+NQ mid-price vs inferred NQ mid-price by referent equities.
+
+Interval: 2023
+
+Model: linear regression
+
+Config:
+
+```toml
+dataset_path = "io/dataset.bin"
+start_iteration = 1
+n_iterations = 100
+
+[iteration]
+n_plays = 4_000_000
+concurrency = 10
+output_dir = "io/models"
+fee_per_contract_usd = 1.65 # NQ
+multiplier = 20.0 # NQ
+utility_penalty_bps = 0.05 # profit decrease due to execution not by mid-price
+max_play_duration_in_bars  = 900
+```
+
+Results:
+
+```
++-----------+------------------+-------------------------+
+| Iteration | Mean Play Length | Mean Utility Prediction |
++-----------+------------------+-------------------------+
+|     1     |       2.21       |         -0.0003         |
+|     2     |       8.18       |          0.0215         |
+|     3     |      52.96       |          0.6811         |
+|     4     |      37.27       |          0.8369         |
+|     5     |      60.28       |          0.3708         |
+|     6     |      71.83       |          0.884          |
+|     7     |      80.48       |          0.7733         |
+|     8     |      103.05      |          0.7782         |
+|     9     |      170.67      |          0.7063         |
+|     10    |      109.74      |          0.846          |
+|     11    |      356.92      |          1.0552         |
+|     12    |      459.05      |          4.7853         |
+|     13    |      458.33      |          6.9034         |
+|     14    |      458.86      |          6.9154         |
+|     15    |      466.45      |          6.7672         |
+|     16    |      462.4       |          6.9526         |
+|     17    |      464.71      |          6.7602         |
+|     18    |      457.02      |          6.9897         |
+|     19    |      457.25      |          7.0637         |
+|     20    |      459.13      |          6.9206         |
++-----------+------------------+-------------------------+
+```
+
+Predicted utility is averaged here over all decision points of the play.
+
+In a play only the last prediction of utility is negative (termination condition). 
+This is why the mean prediction increases with the play length.

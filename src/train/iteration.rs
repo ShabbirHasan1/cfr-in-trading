@@ -1,4 +1,6 @@
-use std::sync::{Arc, RwLock};
+use rand::prelude::ThreadRng;
+use rand::Rng;
+use std::sync::{Arc, RwLock, RwLockWriteGuard};
 
 use crate::config::IterationConfig;
 use crate::dtypes::{DatesetRef, Point, Sample, Utility};
@@ -38,7 +40,7 @@ impl<T: Point> Iteration<T> {
         let samples: Vec<Vec<Sample<T>>> =
             ModelType::all().into_iter().map(|_| Vec::new()).collect();
         let samples = Arc::new(RwLock::new(samples));
-        (0..self.config.concurrency)
+        let join_handles = (0..self.config.concurrency)
             .map(|_| {
                 let config = self.config.clone();
                 let samples2 = samples.clone();
@@ -50,6 +52,9 @@ impl<T: Point> Iteration<T> {
                     run_plays_sequentially(config, samples2, dataset, models, n_plays, stat)
                 })
             })
+            .collect::<Vec<_>>();
+        join_handles
+            .into_iter()
             .for_each(|handle| handle.join().unwrap());
         println!("training");
         self.train_models(samples);
@@ -102,6 +107,7 @@ impl<T: Point> Iteration<T> {
     }
 }
 
+#[allow(dead_code)]
 fn run_plays<T: Point>(
     config: IterationConfig,
     samples: Arc<RwLock<Vec<Vec<Sample<T>>>>>,
@@ -170,13 +176,18 @@ fn run_plays_sequentially<T: Point>(
     n_plays: usize,
     stat: Arc<IterationStat>,
 ) {
-    let mut inferrer: Inferrer<T> = Inferrer::new(dataset.clone(), models.clone(), n_plays);
+    let inferrer: Inferrer<T> = Inferrer::new(dataset.clone(), models.clone(), n_plays);
+    let mut local_samples: Vec<Vec<Sample<T>>> =
+        ModelType::all().into_iter().map(|_| Vec::new()).collect();
+    let mut rng: ThreadRng = rand::thread_rng();
+
     loop {
         if stat.n_plays() >= n_plays {
             break;
         }
-        let model_type = ModelType::random();
-        let mut play = Play::new(&config, dataset.clone(), model_type.clone());
+        let trained_model_type =
+            ModelType::try_from(rng.gen_range(0..ModelType::N_VARIANTS)).unwrap();
+        let mut play = Play::new(&config, dataset.clone(), trained_model_type.clone());
 
         loop {
             if play.is_finished() {
@@ -196,10 +207,14 @@ fn run_plays_sequentially<T: Point>(
 
         stat.update_play_lengths(play.len());
         let point: T = dataset[play.start_bar_index()].point.clone();
-        let model_type: ModelType = play.trained_model_type();
-        let model_index: usize = model_type.into();
+        let model_index: usize = play.trained_model_type().into();
         let utility: Utility = play.utility();
         let sample: Sample<T> = Sample { point, utility };
-        samples.write().unwrap()[model_index].push(sample);
+        local_samples[model_index].push(sample);
     }
+    let mut locked_samples: RwLockWriteGuard<Vec<Vec<Sample<T>>>> = samples.write().unwrap();
+    ModelType::all().into_iter().for_each(|model_type| {
+        let model_index: usize = model_type.into();
+        locked_samples[model_index].extend(local_samples[model_index].drain(..));
+    });
 }
