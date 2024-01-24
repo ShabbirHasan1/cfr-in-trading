@@ -192,8 +192,84 @@ Backtest:
 
 Test set
 
-![backtest](io/static/pnl_test_set.png)
+![backtest](doc/img/pnl_test_set.png)
 
 Full set
 
-![backtest](io/static/pnl_full_set.png)
+![backtest](doc/img/pnl_full_set.png)
+
+
+Params:
+
+```
+opening_long: {"coef": [0.17300462358807628, 0.033622359526197076, -0.05255397491951599], "intercept": 6.293762583369376, "loss": null}
+closing_long: {"coef": [0.1525811802897294, 0.04453460176442493, -0.05721550936327624], "intercept": 6.829456054559397, "loss": null}
+opening_short: {"coef": [-0.0006210175343476525, 0.0038367541961747864, 0.00028759150502061237], "intercept": -0.18653472237544577, "loss": null}
+closing_short: {"coef": [0.00025350892837230015, 0.0016283998166727299, -0.00016871434613208018], "intercept": -0.07107046826251026, "loss": null
+```
+
+## Critics
+
+What is learned is a long-only strategy. Nasdaq rose in 2023, so averaging the whole year gave
+the short closing model that closes early. Hence, the short opening model learns not to open at all.
+
+Profit only as utitily may seem a bad choice. 
+
+What can be done:
+
++ Trying to balance the training set: select equal number of falling and rising days.
+
++ Online learning: train on some interval prior to the current day and use the resulting models 
+  to trade the current day.
+
+
+## Comparison with other Approaches
+
+This approach is somewhat similar to gradient learning with backtest runs to determine the gradient.
+
+1. A fully-connected neural network is randomly initialized with weights close to zero.
+
+2. For each bar, this NN gives a score -1 to 1 to determine the action 
+   (continuous size or unit size with a threshold).
+
+3. Given a vector of scores for all bars, the profit is calculated. Some transformation of this profit
+   is used as the value used to calculate the gradient (call it utility).
+
+4. Weights are shifted by small value and steps 2 and 3 are repeated.
+
+5. The gradient is calculated as the difference between the utilities of the original and shifted weights.
+
+6. The weights are shifted in the direction of the gradient.
+
+7. Steps 2-6 are repeated until some stop condition is met.
+
+
+What is similar: 
+
++ Each weight shifting is a training iteration that gives a model used to do inference 
+  on the next iteration.
+
++ The model is used to make decision on each bar.
+
+What is different: 
+
++ No split to opening and closing models. 
+
++ Each inference gives one utility for the entire dataset. Maybe this is better, since utility
+  can include standard deviation and number of trades, e.g. mean/standard error.
+
+
+## Other Considerations
+
++ Probably there is no need to randomly select a bar during training. We can just go through all bars.
+
++ Fully-connected neural networks will probably do a better job than linear regression.
+
++ Feature set can be much reacher.
+
++ Discretization can be smaller.
+
++ During online learning, abrupt change in learning statistics can be used to skip some days.
+  Rationale: if a market behavior changes, than it may be better not to average old and new behavior.
+
++ Training statistics can be used somehow tune models or select traning sets.

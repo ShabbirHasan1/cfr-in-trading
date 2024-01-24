@@ -135,14 +135,17 @@ mod test {
     fn test() {
         let bars = [
             Bar {
+                timestamp: 0,
                 mid_price: Price(100.0),
                 point: P {},
             },
             Bar {
+                timestamp: 1,
                 mid_price: Price(101.0),
                 point: P {},
             },
             Bar {
+                timestamp: 2,
                 mid_price: Price(102.0),
                 point: P {},
             },

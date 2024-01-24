@@ -1,11 +1,10 @@
 /target
 /.idea
-/pydev
-/io/models
-/io/dataset.bin
-/io/profits.csv
-/io/bt_models*
+/io
 __pycache__/
 *.py[cod]
 /train
 /backtest
+/py/src/dev/*.ipynb
+/py/src/dev/dataset_prep/*.ipynb
+/py/src/dev/dataset_prep/*.csv
